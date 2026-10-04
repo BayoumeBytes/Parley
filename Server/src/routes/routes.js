@@ -1,6 +1,11 @@
 import Router from "express";
-import { routes as authRoutes } from "../controllers/AuthController.js";
+import { AuthRouter } from "../controllers/AuthController.js";
+import { requireAuth } from "../middleware/requireAuth.js";
+import { ConvRouter } from "../controllers/ConversationController.js";
 
 export const router = Router();
 
-authRoutes(router);
+router.use("/auth", AuthRouter);
+
+router.use(requireAuth);
+router.use("/conversations", ConvRouter);

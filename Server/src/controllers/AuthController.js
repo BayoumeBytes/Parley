@@ -1,9 +1,9 @@
 import { SignIn, Register } from "../services/AuthService.js";
+import { Router } from "express";
 
-export function routes(router) {
-  router.post("/login", login);
-  router.post("/register", register);
-}
+export const AuthRouter = Router();
+AuthRouter.post("/login", login);
+AuthRouter.post("/register", register);
 
 export async function login(req, res) {
   const { username, password } = req.body;
