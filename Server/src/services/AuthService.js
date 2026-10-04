@@ -1,4 +1,5 @@
 import { UserModel } from "../models/Users.js";
+import { SessionModel } from "../models/Session.js";
 import { hash, verify } from "../utils/password.util.js";
 import { generateSessionID, VerifySession } from "./SessionService.js";
 
@@ -11,8 +12,15 @@ export async function SignIn(username, password) {
     return "Invalid password";
   }
   const sessionId = generateSessionID();
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const session = new SessionModel({
+    SessionID: sessionId,
+    userId: user._id,
+    expiresAt,
+  });
+  await session.save();
 
-  return sessionId;
+  return { sessionId, expiresAt };
 }
 
 export async function Register(username, password, email) {
