@@ -14,7 +14,7 @@ export async function SignIn(username, password) {
   const sessionId = generateSessionID();
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
   const session = new SessionModel({
-    SessionID: sessionId,
+    sessionId: sessionId,
     userId: user._id,
     expiresAt,
   });
