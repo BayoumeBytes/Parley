@@ -1,9 +1,12 @@
+import { requireAuth } from "../middleware/requireAuth.js";
 import { SignIn, Register } from "../services/AuthService.js";
 import { Router } from "express";
+import "dotenv/config";
 
 export const AuthRouter = Router();
 AuthRouter.post("/login", login);
 AuthRouter.post("/register", register);
+AuthRouter.post("/logout", requireAuth, logout);
 
 export async function login(req, res) {
   const { username, password } = req.body;
@@ -23,7 +26,7 @@ export async function login(req, res) {
       return res.status(401).json({ message: "invalid credentials" });
     }
 
-    res.cookie("__Host-session", result.sessionId, {
+    res.cookie(process.env.session, result.sessionId, {
       httpOnly: true,
       secure: true,
       sameSite: "lax",
@@ -53,4 +56,14 @@ export async function register(req, res) {
   } catch (err) {
     res.status(500).json({ message: "internal server error" });
   }
+}
+
+export async function logout(req, res) {
+  res.clearCookie(process.env.session, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",
+  });
+  return res.status(200).json({ message: "logged out" });
 }
