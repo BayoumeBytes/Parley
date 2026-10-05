@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-export const SessionSchema = new mongoose.Schema({
+const SessionSchema = new mongoose.Schema({
   sessionId: { type: String, required: true },
   userId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "User" },
   expiresAt: { type: Date, required: true },

@@ -1,7 +1,14 @@
 import mongoose from "mongoose";
 
-export const RoomSchema = new mongoose.Schema({
+const RoomSchema = new mongoose.Schema({
   name: { type: String, default: "" },
-  members: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-  isGroup: { type: Boolean, default: false, required: true },
+  type: { type: String, enum: ["group", "direct"], required: true },
+  directKey: { type: String },
 });
+
+RoomSchema.index(
+  { directKey: 1 },
+  { unique: true, partialFilterExpression: { directKey: { $type: "string" } } },
+);
+
+export const RoomModel = mongoose.model("Room", RoomSchema);
