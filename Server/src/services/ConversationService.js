@@ -57,7 +57,7 @@ async function addMemberships(roomId, userIds, ownerId = null) {
   );
 }
 
-export async function AddMembersToRoom(roomId, members) {
+export async function AddMembersToGroup(roomId, members) {
   try {
     const room = await RoomModel.findOne({ _id: roomId });
     if (!room) return { error: "Room not found" };
@@ -81,7 +81,7 @@ export async function AddMembersToRoom(roomId, members) {
   }
 }
 
-export async function RemoveMembersFromRoom(roomId, members) {
+export async function RemoveMembersFromGroup(roomId, members) {
   try {
     const room = await RoomModel.findOne({ _id: roomId });
     if (!room) return { error: "Room not found" };
