@@ -1,14 +1,7 @@
-import { requireAuth } from "../middleware/requireAuth.js";
 import { SignIn, Register } from "../services/AuthService.js";
-import { Router } from "express";
 import "dotenv/config";
 
-export const AuthRouter = Router();
-AuthRouter.post("/login", login);
-AuthRouter.post("/register", register);
-AuthRouter.post("/logout", requireAuth, logout);
-
-async function login(req, res) {
+export async function login(req, res) {
   const { username, password } = req.body;
   if (username == null || password == null) {
     return res
@@ -39,7 +32,7 @@ async function login(req, res) {
   }
 }
 
-async function register(req, res) {
+export async function register(req, res) {
   const { username, password, email } = req.body;
   if (username == null || password == null || email == null) {
     return res.status(400).json({ message: "fields are required" });

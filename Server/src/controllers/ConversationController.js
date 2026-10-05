@@ -1,17 +1,10 @@
-import { Router } from "express";
 import {
   CreateRoom,
   AddMembersToGroup,
   RemoveMembersFromGroup,
 } from "../services/ConversationService.js";
 
-export const ConvRouter = Router();
-
-ConvRouter.post("/CreateGroup", CreateGroup);
-ConvRouter.post("/AddMembers", AddMembers);
-ConvRouter.post("/RemoveMembers", RemoveMembers);
-
-async function CreateGroup(req, res) {
+export async function CreateGroup(req, res) {
   const { name, members, type } = req.body;
   if (members == null || type == null) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -30,7 +23,7 @@ async function CreateGroup(req, res) {
   }
 }
 
-async function AddMembers(req, res) {
+export async function AddMembers(req, res) {
   const { roomId, newmembers: NewMembers } = req.body;
   if (NewMembers == null || roomId == null) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -43,7 +36,7 @@ async function AddMembers(req, res) {
   }
 }
 
-async function RemoveMembers(req, res) {
+export async function RemoveMembers(req, res) {
   const { roomId, members: MembersToRemove } = req.body;
   if (MembersToRemove == null || roomId == null) {
     return res.status(400).json({ error: "Missing required fields" });
