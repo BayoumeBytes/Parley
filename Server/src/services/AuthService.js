@@ -27,7 +27,7 @@ export async function Register(username, password, email) {
   const user = await UserModel.findOne({
     $or: [
       { username: username },
-      { email: username }, // Use the same variable if the input can be either
+      { email: email }, // Use the same variable if the input can be either
     ],
   });
   if (user) {
