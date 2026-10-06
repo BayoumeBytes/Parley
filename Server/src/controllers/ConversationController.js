@@ -2,6 +2,7 @@ import {
   CreateRoom,
   AddMembersToGroup,
   RemoveMembersFromGroup,
+  GetUserRooms,
 } from "../services/ConversationService.js";
 
 export async function CreateGroup(req, res) {
@@ -46,5 +47,18 @@ export async function RemoveMembers(req, res) {
     return res.status(200).json(updatedRoom);
   } catch (error) {
     return res.status(500).json({ error: error.message });
+  }
+}
+
+export async function GetRooms(req, res) {
+  const userId = req.user.id;
+  try {
+    const result = await GetUserRooms(userId);
+    if (result == null) {
+      return res.status(200).json({ result: "user doenst have rooms" });
+    }
+    return res.status(200).json({ result: result });
+  } catch (err) {
+    return res.status(501).json({ error: err.message });
   }
 }

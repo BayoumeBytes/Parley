@@ -104,3 +104,16 @@ export async function RemoveMembersFromGroup(roomId, members) {
     return { error: error.message };
   }
 }
+
+export async function GetUserRooms(userId) {
+  try {
+    const membership = await MemberShipModel.find({ user: userId })
+      .select("room user -_id")
+      .populate("user", "username _id")
+      .lean();
+    if (!membership) return null;
+    return membership;
+  } catch (error) {
+    return { error: error.message };
+  }
+}
