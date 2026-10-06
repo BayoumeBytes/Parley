@@ -13,13 +13,13 @@ AuthRouter.post("/register", register);
 
 export const ConvRouter = Router();
 
-ConvRouter.post("/CreateGroup", CreateGroup);
-ConvRouter.post("/AddMembers", AddMembers);
-ConvRouter.post("/RemoveMembers", RemoveMembers);
+ConvRouter.post("/creategroup", CreateGroup);
+ConvRouter.post("/addmembers", AddMembers);
+ConvRouter.post("/removemembers", RemoveMembers);
 
 export const router = Router();
 router.use("/auth", AuthRouter);
 
 router.use(requireAuth);
 AuthRouter.post("/logout", logout);
-router.use("/conversations", ConvRouter);
+router.use("/conv", ConvRouter);
