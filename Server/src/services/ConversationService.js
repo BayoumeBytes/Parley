@@ -1,6 +1,10 @@
 import { RoomModel } from "../models/Room.js";
 import { MemberShipModel } from "../models/MemberShip.js";
 
+/**
+ * @param {unknown[]} list
+ * @return {string[]}
+ */
 const normalize = (list) => [...new Set([list].flat().map(String))];
 
 export async function CreateRoom(name = "", members, type, creatorId) {
@@ -12,6 +16,7 @@ export async function CreateRoom(name = "", members, type, creatorId) {
       }
 
       const directKey = [...ids].sort().join(":");
+
       const room = await RoomModel.findOneAndUpdate(
         { directKey },
         { $setOnInsert: { type: "direct" } }, // directKey is added from the filter
