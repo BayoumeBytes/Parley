@@ -12,7 +12,7 @@ export async function login(req, res) {
     const result = await SignIn(username, password);
 
     if (result == null) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(401).json({ message: "User not found" });
     }
 
     if (result == "Invalid password") {

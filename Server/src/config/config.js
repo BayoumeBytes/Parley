@@ -15,12 +15,8 @@ function connectionString() {
 }
 
 export async function connectToDb() {
-  await mongoose
-    .connect(connectionString())
-    .then(() => {
-      console.log("Connected to MongoDB");
-    })
-    .catch((err) => {
-      console.error("Failed to connect to MongoDB", err);
-    });
+  await mongoose.connect(connectionString(), {
+    serverSelectionTimeoutMS: 2000,
+  });
+  console.log("Conncted to mongodb");
 }
