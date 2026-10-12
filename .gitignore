@@ -1,2 +1,4 @@
 Server/node_modules/
 Server/.env
+graphify-out/
+Server/wiki/
