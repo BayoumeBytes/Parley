@@ -1,4 +1,6 @@
 import { CreateMessage, GetRoomMessages } from "../services/MessagesService.js";
+import { getIO } from "../sockets/index.js";
+// import { getIO } from "../sockets/index.js";
 
 export async function SendMessage(req, res) {
   const { message, room, sender } = req.body;
@@ -6,6 +8,7 @@ export async function SendMessage(req, res) {
     return res.status(400).json({ error: "Missing required fields" });
   try {
     const Message = await CreateMessage(message, room, sender);
+    getIO().emit("newMessage", message);
     if (!Message.error) return res.status(201).json({ result: "success" });
     return res.status(404).json({ error: "something went wrong" });
   } catch (e) {

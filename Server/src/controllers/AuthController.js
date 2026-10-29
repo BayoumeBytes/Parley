@@ -1,6 +1,15 @@
 import { SignIn, Register } from "../services/AuthService.js";
 import "dotenv/config";
 
+const isProd = process.env.NODE_ENV === "production";
+export const COOKIE_NAME = isProd ? "__Host-session" : "session";
+export const cookieOptions = {
+  httpOnly: true,
+  secure: isProd, // false on http://localhost
+  sameSite: "lax",
+  path: "/",
+};
+
 export async function login(req, res) {
   const { username, password } = req.body;
   if (username == null || password == null) {
@@ -20,11 +29,9 @@ export async function login(req, res) {
     }
 
     res.cookie(process.env.session, result.sessionId, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: result.expiresAt,
+      ...cookieOptions,
+      expires: new Date(result.expiresAt),
+      // maxAge: result.expiresAt,
     });
     return res.status(200).json({ message: "logged in" });
   } catch (err) {
