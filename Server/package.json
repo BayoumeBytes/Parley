@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon src/server.js",
-    "test": "cross-env NODE_ENV=test jest"
+    "test": "cross-env NODE_ENV=test jest",
+    "test:integration": "cross-env NODE_ENV=test REALTIME_NETWORK=1 jest --runInBand",
+    "lint": "eslint src test eslint.config.js"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +22,7 @@
   "packageManager": "pnpm@12.8.1",
   "type": "module",
   "dependencies": {
+    "cookie-parser": "1.4.7",
     "cors": "^2.8.6",
     "cross-env": "^10.1.0",
     "dotenv": "^18.0.7",

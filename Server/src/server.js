@@ -1,4 +1,3 @@
-import { Server } from "socket.io";
 import { app } from "./app.js";
 import { config, connectToDb } from "./config/config.js";
 import { createServer } from "node:http";

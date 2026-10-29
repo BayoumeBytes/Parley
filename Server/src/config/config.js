@@ -8,8 +8,10 @@ export const config = {
     port: 27017,
     name: "Parley",
   },
-  clientUrl: "http://localhost:4200",
+  clientUrl: process.env.CLIENT_URL || "http://localhost:4200",
 };
+
+export const corsOptions = { origin: config.clientUrl, credentials: true };
 
 function connectionString() {
   return `mongodb://${config.db.host}:${config.db.port}/${config.db.name}`;

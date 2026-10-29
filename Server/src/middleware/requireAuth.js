@@ -1,9 +1,11 @@
+import "dotenv/config";
 import { SessionModel } from "../models/Session.js";
 
-export const COOKIE_NAME = "__Host-session";
+const isProd = process.env.NODE_ENV === "production";
+export const COOKIE_NAME = isProd ? "__Host-session" : "session";
 export const cookieOptions = {
   httpOnly: true,
-  secure: true,
+  secure: isProd,
   sameSite: "lax",
   path: "/",
 };
@@ -13,13 +15,13 @@ export async function findValidSession(Id) {
 
   const session = await SessionModel.findOne({ sessionId: Id });
   if (!session) return null;
-  if (session.expiresAt < Date.now()) return null;
+  if (session.expiresAt <= Date.now()) return null;
   return session;
 }
 
 export async function requireAuth(req, res, next) {
   try {
-    const session = await findValidSession(req.cookies[COOKIE_NAME]);
+    const session = await findValidSession(req.cookies?.[COOKIE_NAME]);
     if (!session) {
       res.clearCookie(COOKIE_NAME, cookieOptions);
       return res.status(401).send("Unauthorized");

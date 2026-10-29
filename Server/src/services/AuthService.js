@@ -1,7 +1,7 @@
 import { UserModel } from "../models/Users.js";
 import { SessionModel } from "../models/Session.js";
 import { hash, verify } from "../utils/password.util.js";
-import { generateSessionID, VerifySession } from "./SessionService.js";
+import { generateSessionID } from "./SessionService.js";
 
 export async function SignIn(username, password) {
   const user = await UserModel.findOne({ username });

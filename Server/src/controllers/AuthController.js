@@ -1,14 +1,9 @@
 import { SignIn, Register } from "../services/AuthService.js";
-import "dotenv/config";
+import { COOKIE_NAME, cookieOptions } from "../middleware/requireAuth.js";
+import { SessionModel } from "../models/Session.js";
+import { disconnectSession } from "../sockets/events.js";
 
-const isProd = process.env.NODE_ENV === "production";
-export const COOKIE_NAME = isProd ? "__Host-session" : "session";
-export const cookieOptions = {
-  httpOnly: true,
-  secure: isProd, // false on http://localhost
-  sameSite: "lax",
-  path: "/",
-};
+export { COOKIE_NAME, cookieOptions };
 
 export async function login(req, res) {
   const { username, password } = req.body;
@@ -28,10 +23,9 @@ export async function login(req, res) {
       return res.status(401).json({ message: "invalid credentials" });
     }
 
-    res.cookie(process.env.session, result.sessionId, {
+    res.cookie(COOKIE_NAME, result.sessionId, {
       ...cookieOptions,
       expires: new Date(result.expiresAt),
-      // maxAge: result.expiresAt,
     });
     return res.status(200).json({ message: "logged in" });
   } catch (err) {
@@ -53,17 +47,14 @@ export async function register(req, res) {
     }
 
     res.status(201).json({ message: "registered" });
-  } catch (err) {
+  } catch {
     res.status(500).json({ message: "internal server error" });
   }
 }
 
 export async function logout(req, res) {
-  res.clearCookie(process.env.session, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "lax",
-    path: "/",
-  });
+  await SessionModel.deleteOne({ sessionId: req.sessionId });
+  disconnectSession(req.sessionId);
+  res.clearCookie(COOKIE_NAME, cookieOptions);
   return res.status(200).json({ message: "logged out" });
 }

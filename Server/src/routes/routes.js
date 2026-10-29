@@ -15,6 +15,7 @@ import {
 export const AuthRouter = Router();
 AuthRouter.post("/login", login);
 AuthRouter.post("/register", register);
+AuthRouter.post("/logout", requireAuth, logout);
 
 export const ConvRouter = Router();
 
@@ -32,8 +33,6 @@ export const router = Router();
 router.use("/auth", AuthRouter);
 
 router.use(requireAuth);
-
-AuthRouter.post("/logout", logout);
 
 router.use("/conv", ConvRouter);
 router.use("/msg", MsgRouter);
