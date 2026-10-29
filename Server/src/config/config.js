@@ -8,6 +8,7 @@ export const config = {
     port: 27017,
     name: "Parley",
   },
+  clientUrl: "http://localhost:4200",
 };
 
 function connectionString() {
