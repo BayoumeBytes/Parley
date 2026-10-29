@@ -5,10 +5,9 @@ ES module Node.js service built with Express and Mongoose. The server provides
 user registration and login, cookie-based sessions, conversation/room
 management, and message persistence through MongoDB.
 
-> **Current transport:** the checked-in server exposes an HTTP/JSON REST API.
-> There is currently no WebSocket or Socket.IO server in `src/`, so clients
-> should use the message endpoints for persistence. Real-time delivery will
-> require an additional event transport or a separate real-time service.
+Messages can be sent through REST or authenticated Socket.IO connections on the
+same server. Both paths persist first, then publish the complete message to its
+room. This repository contains the backend; frontend integration is shown below.
 
 ## Contents
 
@@ -21,6 +20,7 @@ management, and message persistence through MongoDB.
 - [Architecture](#architecture)
 - [Authentication and sessions](#authentication-and-sessions)
 - [HTTP API](#http-api)
+- [Realtime API](#realtime-api)
 - [Data model](#data-model)
 - [Testing](#testing)
 - [Deployment and operations](#deployment-and-operations)
@@ -37,7 +37,9 @@ management, and message persistence through MongoDB.
 - Create named group conversations.
 - Add and remove members from group conversations.
 - List a user's room memberships.
-- Send messages and retrieve room history.
+- Send messages and retrieve room history with room membership checks.
+- Receive room-scoped messages, typing indicators, and membership notifications.
+- Automatically subscribe connected tabs and devices to their conversations.
 - Validate core service behavior with Jest unit tests.
 
 ## Technology
@@ -75,16 +77,18 @@ cd Server
 pnpm install
 ```
 
-Create a local `.env` file. The server currently expects the session cookie
-name from the `session` variable:
+Create a local `.env` file:
 
 ```dotenv
 NODE_ENV=development
 PORT=3000
-session=__Host-session
+CLIENT_URL=http://localhost:4200
 ```
 
-`PORT` is optional and defaults to `3000`. The MongoDB host, port, and database
+`PORT` defaults to `3000`; `CLIENT_URL` defaults to `http://localhost:4200`
+and controls the credentialed HTTP and Socket.IO origins. Cookie names are
+`session` in development/test and `__Host-session` in production. The legacy
+`session` environment variable is no longer used. The MongoDB host, port, and database
 name are currently defined in `src/config/config.js` rather than environment
 variables:
 
@@ -111,7 +115,7 @@ The startup sequence is:
 1. Load environment variables with `dotenv`.
 2. Connect to MongoDB.
 3. Mount the Express application.
-4. Listen on `PORT` or port `3000`.
+4. Attach Socket.IO to the same HTTP server and listen on `PORT` or port `3000`.
 
 The API base URL is:
 
@@ -151,6 +155,9 @@ src/
 │   └── Messages.js
 └── utils/
     └── password.util.js         # Password hashing and verification
+
+src/sockets/                    # Authentication, events, and room subscriptions
+src/services/RoomAccessService.js # Shared room authorization
 ```
 
 Requests flow through the application as:
@@ -184,16 +191,16 @@ routes are mounted after `requireAuth`, including logout.
 4. A session document is stored with a 24-hour expiration time.
 5. The identifier is sent in the configured cookie name.
 
-The cookie is configured as HTTP-only, secure, `SameSite=Lax`, and scoped to
-`/`. Because it is secure, local HTTP clients may need HTTPS or a test-specific
-cookie configuration.
+The cookie is HTTP-only, `SameSite=Lax`, and scoped to `/`. Production uses
+a secure `__Host-session` cookie over HTTPS. Development uses `session` over
+HTTP so the same login works for REST and Socket.IO on localhost.
 
 ### Authenticated request
 
 Send the cookie returned by login with subsequent requests:
 
 ```bash
-curl -b cookies.txt http://localhost:3000/api/conv/getuserrooms
+curl -X POST -b cookies.txt http://localhost:3000/api/conv/getuserrooms
 ```
 
 An absent, invalid, or expired session returns `401 Unauthorized` and clears
@@ -260,7 +267,7 @@ On success, the response sets the session cookie:
 }
 ```
 
-Responses include `400` for missing fields, `404` when the user is not found,
+Responses include `400` for missing fields, `401` when the user is not found,
 `401` for an invalid password, and `500` for an unexpected error.
 
 #### Logout
@@ -269,7 +276,8 @@ Responses include `400` for missing fields, `404` when the user is not found,
 POST /auth/logout
 ```
 
-Requires authentication and clears the session cookie:
+Requires authentication, deletes the session, disconnects all sockets using that
+session, and clears the cookie:
 
 ```json
 {
@@ -313,9 +321,10 @@ Request:
 }
 ```
 
-Group rooms require a non-empty `name`. The authenticated user is marked as
-the `owner` when their ID is included in `members`; all other initial members
-are marked as `member`.
+Group rooms require a non-empty `name`. The authenticated creator is always
+included and is marked as `owner`; other initial members are marked as `member`.
+For direct chats, supply the other user alone or both users. Exactly two distinct
+users, including the creator, are required. Connected members receive `roomAdded`.
 
 Successful creation returns the created room (or a `{ "room": ... }` result
 for group creation). Invalid input returns `400`; service failures return
@@ -336,7 +345,9 @@ Request:
 }
 ```
 
-Only group rooms accept new members. Existing memberships are ignored and
+Only group owners and admins may add or remove members. Only group rooms
+accept membership changes. Added users subscribe immediately; removed users
+are evicted across their connected tabs and devices. Existing memberships are ignored and
 successful additions return:
 
 ```json
@@ -406,36 +417,26 @@ Request:
 ```json
 {
   "message": "Hello from Parley",
-  "room": "ROOM_ID",
-  "sender": "USER_ID"
+  "room": "ROOM_ID"
 }
 ```
 
-Successful persistence returns:
-
-```json
-{
-  "result": "success"
-}
-```
-
-The current controller accepts `sender` from the request body. Clients should
-use the authenticated user's ID; a future hardening change should derive this
-value from `req.user` instead.
+Successful persistence returns HTTP `201` with `{ "result": "success", "message":
+{ "_id": "MESSAGE_ID", "message": "Hello from Parley", "room": "ROOM_ID",
+"sender": "USER_ID", "createdAt": "..." } }` and publishes the same message
+as `newMessage` to room subscribers. `sender` comes from the session; any body
+`sender` is ignored. Messages must be strings with non-whitespace content and
+at most 10,000 characters. Invalid input returns `400`, non-members return
+`403`, and persistence failures return `500` without broadcasting.
 
 #### Get room history
 
 ```http
-GET /msg/getroomhistory
+GET /msg/getroomhistory?room=ROOM_ID
 ```
 
-The current implementation reads `room` from the JSON request body:
-
-```json
-{
-  "room": "ROOM_ID"
-}
-```
+Use the `room` query parameter. A legacy JSON body is also accepted.
+Only current room members can retrieve history.
 
 Successful responses return messages newest first:
 
@@ -452,6 +453,92 @@ Successful responses return messages newest first:
   ]
 }
 ```
+
+## Realtime API
+
+Socket.IO is served on the API server's default `/socket.io/` path. Log in first
+using `credentials: "include"`, then connect with `withCredentials: true`.
+The browser sends the HTTP-only cookie automatically; no client-supplied user ID
+or session token is required. Use matching hostnames (for example, `localhost`
+for both frontend and backend). The cookie uses `SameSite=Lax`; deployments on
+unrelated sites need a separate cookie/CORS configuration.
+
+Every connection, including reconnects, loads current memberships and emits
+`ready: { userId, rooms: [roomId] }` after subscribing. Wait for `ready` to refresh
+history. Register listeners once, outside `connect`, so reconnects do not duplicate
+them. Reconcile live messages and history by `_id`.
+
+| Client event | Payload | Success acknowledgement |
+| --- | --- | --- |
+| `sendMessage` | `{ room, message }` | `{ ok: true, message: savedMessage }` |
+| `joinRoom` | `{ room }` | `{ ok: true, room }` |
+| `leaveRoom` | `{ room }` | `{ ok: true, room }` |
+| `typing` | `{ room, isTyping: boolean }` | `{ ok: true, room }` |
+
+Errors acknowledge `{ ok: false, status, error }`. Without an acknowledgement
+callback, errors arrive as `chatError`. Handshake failures arrive as
+`connect_error`. `leaveRoom` only unsubscribes that socket; it does not delete
+membership. `joinRoom` subscribes again after checking membership.
+
+| Server event | Payload and audience |
+| --- | --- |
+| `newMessage` | Full persisted `{ _id, room, sender, message, createdAt }`, including the sending socket if subscribed |
+| `typing` | `{ room, userId, isTyping }` to other sockets subscribed to the room |
+| `roomAdded` / `roomRemoved` | `{ room }` to every connected socket of the affected user |
+| `membersAdded` / `membersRemoved` | `{ room, members: [userId] }` to remaining room subscribers |
+
+Membership changes use the REST conversation endpoints. The server updates
+subscriptions automatically. On `roomAdded`, refresh the room list; on
+`roomRemoved`, remove that room from the UI. Typing is transient: emit `false`
+on blur/send and clear indicators after a short client-side timeout.
+
+Frontend example (install `socket.io-client` in the frontend project):
+
+```js
+import { io } from "socket.io-client";
+
+const api = "http://localhost:3000";
+await fetch(`${api}/api/auth/login`, {
+  method: "POST",
+  credentials: "include",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ username, password }),
+});
+
+const socket = io(api, { withCredentials: true, autoConnect: false });
+socket.on("newMessage", (message) => upsertMessageById(message));
+socket.on("ready", async ({ rooms }) => {
+  for (const room of rooms) {
+    const response = await fetch(
+      `${api}/api/msg/getroomhistory?room=${encodeURIComponent(room)}`,
+      { credentials: "include" },
+    );
+    const { History } = await response.json();
+    History.forEach(upsertMessageById);
+  }
+});
+socket.on("connect_error", (error) => console.error(error.message));
+socket.on("chatError", (error) => console.error(error));
+socket.connect();
+
+function send(room, message) {
+  socket.timeout(5000).emit("sendMessage", { room, message }, (timeout, result) => {
+    if (timeout) return console.error("Delivery status unknown; refresh history");
+    if (!result.ok) return console.error(result.error);
+    upsertMessageById(result.message);
+  });
+}
+
+// REST sends are also broadcast, so existing REST clients can listen to newMessage.
+// await fetch(`${api}/api/msg/sendmsg`, { method: "POST", credentials: "include",
+//   headers: { "Content-Type": "application/json" },
+//   body: JSON.stringify({ room, message: "Hello" }) });
+```
+
+`username`, `password`, and `upsertMessageById` above belong to the frontend.
+Socket.IO middleware and room behavior follow the official
+[middleware](https://socket.io/docs/v4/middlewares/) and
+[rooms](https://socket.io/docs/v4/rooms/) APIs.
 
 ## Data model
 
@@ -474,16 +561,26 @@ Run the configured Jest suite from `Server/`:
 pnpm test
 ```
 
-The test command sets `NODE_ENV=test` and uses a 10-second test timeout.
-Jest is configured to discover tests under `test/`; the current suite includes
-service tests for message creation and room-history retrieval.
+The test command sets `NODE_ENV=test`.
+The suite exercises Express routes and real Socket.IO packet parsing, middleware,
+rooms, and handlers through an in-memory transport with mocked database operations.
+It checks authentication, isolated delivery, sender identity, validation, failed
+saves, membership changes, typing, history, and logout. It does not require MongoDB
+or a listening port. To run the same cases over real HTTP/Engine.IO polling:
+
+```bash
+pnpm test:integration
+```
+
+The integration mode needs permission to bind a localhost port. MongoDB operations
+remain mocked in both modes; a live database smoke test is still useful before deployment.
 
 TypeScript is configured for JavaScript checking support, but the project does
 not currently expose a `typecheck` script. Linting can be run with the local
 ESLint binary if needed:
 
 ```bash
-pnpm exec eslint src test
+pnpm lint
 ```
 
 ## Deployment and operations
@@ -491,7 +588,7 @@ pnpm exec eslint src test
 Before deployment:
 
 1. Provision MongoDB and confirm the server can reach it.
-2. Set `NODE_ENV=production`, `PORT`, and a production session cookie name.
+2. Set `NODE_ENV=production`, `PORT`, and `CLIENT_URL` to the frontend origin.
 3. Serve the API over HTTPS because the session cookie is marked `secure`.
 4. Configure CORS for the frontend's exact origin rather than leaving it open.
 5. Keep `.env` and database credentials outside version control.
@@ -504,27 +601,29 @@ be provided by the deployment platform.
 
 ## Security notes
 
-- Session cookies are HTTP-only and secure.
+- Session cookies are HTTP-only and secure in production.
 - Session records expire after 24 hours and are checked on every private request.
 - Usernames and emails have unique MongoDB indexes.
 - Passwords are not stored in plaintext.
 - The current password utility uses unsalted SHA-256. Production deployments
   should replace it with a slow, salted password KDF such as Argon2, scrypt,
   or bcrypt.
-- CORS is currently enabled with the default `cors()` configuration. Restrict
-  allowed origins before production use.
-- Authorization is not yet enforced per room operation. Authentication proves
-  that a session exists, but controllers should additionally verify that the
-  current user belongs to a room and has permission to add/remove members or
-  send/read messages.
-- The API currently trusts the `sender` field in `POST /msg/sendmsg`; derive
-  it from the authenticated session before treating the endpoint as
-  production-ready.
+- HTTP and Socket.IO share an exact allowed frontend origin and credentials.
+- Socket handshakes validate the session cookie; each handled event revalidates
+  it. Expiration disconnects idle sockets, and logout revokes the session.
+- Message sends, history reads, room joins, and typing require room membership.
+- Only room owners and admins can add or remove group members.
+- Sender identity is always derived from the authenticated session.
 
 ## Known limitations
 
-- No WebSocket/Socket.IO implementation is present; REST calls do not by
-  themselves provide real-time fan-out.
+- Realtime room management currently assumes one server process and the default
+  in-memory adapter. Multiple instances need a shared Socket.IO adapter and
+  coordinated session revocation.
+- Offline events are not queued. Reload history after reconnecting and deduplicate
+  messages by `_id`. Sending through both REST and sockets creates two messages;
+  choose one send transport per action. Automatic retries need an idempotency
+  design before they can guarantee one persisted message.
 - MongoDB host, port, and database name are hard-coded in
   `src/config/config.js`.
 - There is no health, readiness, or metrics endpoint.
