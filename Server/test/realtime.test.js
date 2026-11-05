@@ -46,7 +46,7 @@ beforeEach(async () => {
   jest.spyOn(MemberShipModel, "find").mockImplementation((filter) => {
     const found = memberships.filter((m) => (!filter.room || m.room === filter.room) &&
       (!filter.user || (typeof filter.user === "string" ? m.user === filter.user : filter.user.$in.includes(m.user))));
-    return { select() { return this; }, lean: async () => found, distinct: async (field) => found.map((m) => m[field]) };
+    return { select() { return this; }, populate() { return this; }, lean: async () => found, distinct: async (field) => found.map((m) => m[field]) };
   });
   jest.spyOn(MemberShipModel, "bulkWrite").mockImplementation(async (operations) => {
     for (const { updateOne: { filter, update } } of operations) {
@@ -148,6 +148,46 @@ test("history uses a GET query parameter and returns persisted messages", async 
   const response = await request(server).get(`/api/msg/getroomhistory?room=${room}`)
     .set("Cookie", "session=bob").expect(200);
   expect(response.body.History).toEqual(messages);
+});
+
+test("room listings preserve room IDs and expose populated metadata and role", async () => {
+  const query = {
+    select: jest.fn().mockReturnThis(),
+    populate: jest.fn().mockReturnThis(),
+    lean: jest.fn().mockResolvedValue([{
+      room: { _id: room, name: "Team", type: "group" },
+      user: { _id: alice, username: "alice" },
+      role: "owner",
+    }, { room: null, user: { _id: alice } }]),
+  };
+  const participantQuery = {
+    select() { return this; },
+    populate() { return this; },
+    lean: async () => [
+      { room, user: { _id: alice, username: "alice" } },
+      { room, user: { _id: bob, username: "bob" } },
+      { room: otherRoom, user: { _id: eve, username: "eve" } },
+    ],
+  };
+  MemberShipModel.find.mockReturnValueOnce(query).mockReturnValueOnce(participantQuery);
+  const response = await request(server).post("/api/conv/getuserrooms")
+    .set("Cookie", "session=alice").send({}).expect(200);
+  expect(response.body.result).toEqual([{
+    room, roomDetails: { _id: room, name: "Team", type: "group" },
+    user: { _id: alice, username: "alice" }, role: "owner",
+    participants: [{ _id: alice, username: "alice" }, { _id: bob, username: "bob" }],
+  }]);
+  expect(query.select).toHaveBeenCalledWith("room user role -_id");
+  expect(query.populate).toHaveBeenCalledWith("room", "name type");
+  expect(MemberShipModel.find).toHaveBeenLastCalledWith({ room: { $in: [room] } });
+});
+
+test("group creation rejects empty and whitespace-only names", async () => {
+  for (const name of ["", "   "]) {
+    await request(server).post("/api/conv/creategroup").set("Cookie", "session=alice")
+      .send({ type: "group", name, members: [bob] }).expect(400);
+  }
+  expect(RoomModel.create).not.toHaveBeenCalled();
 });
 
 test("membership APIs subscribe added users and evict removed users across tabs", async () => {

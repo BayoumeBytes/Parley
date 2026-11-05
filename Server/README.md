@@ -30,7 +30,8 @@ room. This repository contains the backend; frontend integration is shown below.
 
 ## Features
 
-- Register users with a unique username and email address.
+- Register users with a unique username, email address, and required primary phone number.
+- Resolve exact usernames, emails, or primary phone numbers into chat participants.
 - Authenticate users with a signed-in session stored in MongoDB.
 - Protect private endpoints with an HTTP-only session cookie.
 - Create direct conversations between exactly two users.
@@ -231,7 +232,8 @@ Request:
 {
   "username": "alice",
   "password": "correct horse battery staple",
-  "email": "alice@example.com"
+  "email": "alice@example.com",
+  "phoneNumber": "+201012345678"
 }
 ```
 
@@ -240,9 +242,15 @@ Responses:
 | Status | Meaning | Body |
 | --- | --- | --- |
 | `201` | User created | `{"message":"registered"}` |
-| `400` | A required field is missing | `{"message":"fields are required"}` |
-| `409` | Username or email already exists | `{"message":"user already exists"}` |
+| `400` | A required field is missing or invalid | `{"message":"Username, email, password and primary phone number are required"}` or a phone-format error |
+| `409` | Username, email, or primary phone already exists | `{"message":"Username, email or primary phone number is already in use"}` |
 | `500` | Unexpected server/database error | `{"message":"internal server error"}` |
+
+`phoneNumber` is required at signup in international `+<country code><number>`
+format, with 8–15 digits total and a nonzero first digit. Spaces, parentheses,
+dots, and hyphens are removed before lookup/storage, so `+1 (202) 555-0123` and
+`+12025550123` are the same unique number. Missing/invalid numbers return `400`.
+The number is not SMS-verified.
 
 #### Login
 
@@ -286,6 +294,28 @@ session, and clears the cookie:
 ```
 
 ### Conversations
+
+#### Resolve people before creating or updating a conversation
+
+```http
+POST /users/resolve
+```
+
+This authenticated endpoint accepts exact usernames, emails, or international
+primary phone numbers:
+
+```json
+{ "identifiers": ["alice", "bob@example.com", "+1 (202) 555-0123"] }
+```
+
+It returns `{ "users": [{ "_id": "USER_ID", "username": "alice" }] }`.
+It never returns email addresses, phone numbers, or passwords. There must be
+1–50 identifiers, each at most 254 characters. Username and email matching use
+their exact stored spelling; phone matching normalizes formatting. Multiple
+identifiers resolving to the same account are deduplicated. Missing users
+return `404`; an identifier that matches different accounts across fields
+returns `409` instead of choosing someone arbitrarily. Use the returned IDs in
+the conversation endpoints below; the frontend handles that conversion.
 
 #### Create a direct conversation
 
@@ -395,6 +425,16 @@ validated session. Successful responses have the shape:
   "result": [
     {
       "room": "ROOM_ID",
+      "roomDetails": {
+        "_id": "ROOM_ID",
+        "name": "Project team",
+        "type": "group"
+      },
+      "role": "owner",
+      "participants": [
+        { "_id": "USER_ID", "username": "alice" },
+        { "_id": "OTHER_USER_ID", "username": "bob" }
+      ],
       "user": {
         "_id": "USER_ID",
         "username": "alice"
@@ -403,6 +443,13 @@ validated session. Successful responses have the shape:
   ]
 }
 ```
+
+`room` remains the original ID. `roomDetails` and `role` let clients display
+room names/types and membership controls without changing that field.
+`participants` lists only IDs/usernames for current members of the caller's
+rooms. Direct chats display the other member's username; groups display their
+required `roomDetails.name`.
+Memberships referencing deleted rooms are omitted.
 
 ### Messages
 
@@ -544,7 +591,7 @@ Socket.IO middleware and room behavior follow the official
 
 | Collection/model | Important fields and rules |
 | --- | --- |
-| `User` | `username`, `email`, `password`, `Avatar`, `createdAt`, `updatedAt`; username and email are unique |
+| `User` | `username`, `email`, `phoneNumber`, `password`, `Avatar`, `createdAt`, `updatedAt`; username, email and primary phone are unique |
 | `Session` | `sessionId`, `userId`, `expiresAt`; used by authentication middleware |
 | `Room` | `name`, `type` (`group` or `direct`), optional unique `directKey` |
 | `MemberShip` | `room`, `user`, `role` (`owner`, `admin`, or `member`), `joinedAt`, `lastReadAt`; room/user pair is unique |
@@ -585,6 +632,20 @@ pnpm lint
 
 ## Deployment and operations
 
+### Primary phone number rollout
+
+New registrations require `phoneNumber`; old documents without it remain
+readable and can still log in or be resolved by username/email. The phone index
+is unique with a partial filter `{ phoneNumber: { $type: "string" } }`, so
+multiple legacy accounts without a phone do not block index creation.
+There is no automatic phone backfill or SMS verification.
+
+Before deploying to a database that already has phone data, normalize those
+numbers and resolve duplicates before creating the index. Confirm that the
+unique `phoneNumber_1` index exists (provision it explicitly if automatic index
+creation is disabled). Do not use a plain unique index over missing values.
+No existing database has been migrated by this change.
+
 Before deployment:
 
 1. Provision MongoDB and confirm the server can reach it.
@@ -603,7 +664,7 @@ be provided by the deployment platform.
 
 - Session cookies are HTTP-only and secure in production.
 - Session records expire after 24 hours and are checked on every private request.
-- Usernames and emails have unique MongoDB indexes.
+- Usernames, emails, and normalized primary phone numbers have unique MongoDB indexes.
 - Passwords are not stored in plaintext.
 - The current password utility uses unsalted SHA-256. Production deployments
   should replace it with a slow, salted password KDF such as Argon2, scrypt,

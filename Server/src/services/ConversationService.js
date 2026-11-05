@@ -28,7 +28,7 @@ export async function CreateRoom(name = "", members, type, creatorId) {
     }
     if (type == "group") {
       if (!name?.trim()) return { error: "Group rooms require a name" };
-      const room = await RoomModel.create({ name, type: "group" });
+      const room = await RoomModel.create({ name: name.trim(), type: "group" });
       await addMemberships(room._id, ids, creatorId);
       return { room };
     }
@@ -113,11 +113,30 @@ export async function RemoveMembersFromGroup(roomId, members) {
 export async function GetUserRooms(userId) {
   try {
     const membership = await MemberShipModel.find({ user: userId })
-      .select("room user -_id")
+      .select("room user role -_id")
       .populate("user", "username _id")
+      .populate("room", "name type")
       .lean();
     if (!membership) return null;
-    return membership;
+    const roomIds = membership.filter((entry) => entry.room).map((entry) => entry.room._id ?? entry.room);
+    const participants = roomIds.length ? await MemberShipModel.find({ room: { $in: roomIds } })
+      .select("room user -_id")
+      .populate("user", "username _id")
+      .lean() : [];
+    const participantsByRoom = new Map();
+    for (const member of participants) {
+      if (!member.user) continue;
+      const roomId = String(member.room);
+      const users = participantsByRoom.get(roomId) ?? [];
+      users.push({ _id: member.user._id ?? member.user, username: member.user.username });
+      participantsByRoom.set(roomId, users);
+    }
+    return membership.filter((entry) => entry.room).map((entry) => ({
+      ...entry,
+      room: entry.room._id ?? entry.room,
+      roomDetails: entry.room._id ? entry.room : undefined,
+      participants: participantsByRoom.get(String(entry.room._id ?? entry.room)) ?? [],
+    }));
   } catch (error) {
     return { error: error.message };
   }

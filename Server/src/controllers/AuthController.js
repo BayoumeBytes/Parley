@@ -34,20 +34,25 @@ export async function login(req, res) {
 }
 
 export async function register(req, res) {
-  const { username, password, email } = req.body;
-  if (username == null || password == null || email == null) {
-    return res.status(400).json({ message: "fields are required" });
+  const { username, password, email, phoneNumber } = req.body ?? {};
+  if (username == null || password == null || email == null || phoneNumber == null) {
+    return res.status(400).json({ message: "Username, email, password and primary phone number are required" });
   }
 
   try {
-    const result = await Register(username, password, email);
+    const result = await Register(username, password, email, phoneNumber);
 
     if (typeof result === "string") {
-      return res.status(409).json({ message: "user already exists" });
+      return res.status(409).json({ message: "Username, email or primary phone number is already in use" });
     }
 
     res.status(201).json({ message: "registered" });
-  } catch {
+  } catch (error) {
+    // The unique index also catches simultaneous signups that pass the pre-check.
+    if (error.code === 11000) {
+      return res.status(409).json({ message: "Username, email or primary phone number is already in use" });
+    }
+    if (error.status === 400) return res.status(400).json({ message: error.message });
     res.status(500).json({ message: "internal server error" });
   }
 }

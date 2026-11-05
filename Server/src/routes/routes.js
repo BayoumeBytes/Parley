@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { resolveUsers } from "../controllers/UserController.js";
 import {
   CreateGroup,
   AddMembers,
@@ -34,5 +35,6 @@ router.use("/auth", AuthRouter);
 
 router.use(requireAuth);
 
+router.post("/users/resolve", resolveUsers);
 router.use("/conv", ConvRouter);
 router.use("/msg", MsgRouter);
