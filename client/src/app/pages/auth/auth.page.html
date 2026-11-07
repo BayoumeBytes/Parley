@@ -1,0 +1,94 @@
+<main class="auth-layout">
+  <section class="auth-story">
+    <a class="brand" href="/"
+      ><span class="brand-mark">p</span>parley<span class="brand-period">.</span></a
+    >
+    <div class="story-content">
+      <span class="eyebrow">Direct chats and shared conversations</span>
+      <h1>Keep your people<br />in the conversation</h1>
+      <p>A quick message to a friend or a group for your next plan. There’s room for both.</p>
+      <div class="conversation-art" aria-hidden="true">
+        <div class="art-note">A thought to share</div>
+        <div class="art-reply">A conversation to keep</div>
+        <div class="art-dots"><i></i><i></i><i></i></div>
+      </div>
+    </div>
+    <span class="story-footer">Parley · A space for conversation</span>
+  </section>
+  <section class="auth-form-area">
+    <app-theme-toggle class="auth-theme-switch" />
+    <form class="auth-form" (ngSubmit)="submit()">
+      <span class="eyebrow">Your Parley account</span>
+      <h2>{{ registering() ? 'Create an account' : 'Sign in to Parley' }}</h2>
+      <p>
+        {{
+          registering()
+            ? 'Find your people by username, email or phone.'
+            : 'Continue your direct and group conversations.'
+        }}
+      </p>
+      <label for="username">Username</label>
+      <input
+        id="username"
+        name="username"
+        [(ngModel)]="form.username"
+        required
+        maxlength="100"
+        autocomplete="username"
+        placeholder="Your username"
+      />
+      @if (registering()) {
+        <label for="email">Email address</label>
+        <input
+          id="email"
+          name="email"
+          [(ngModel)]="form.email"
+          required
+          type="email"
+          autocomplete="email"
+          placeholder="you@example.com"
+        />
+        <label for="phone-number">Primary phone number</label>
+        @defer (on immediate) {
+          <app-phone-input
+            inputId="phone-number"
+            name="phoneNumber"
+            [(ngModel)]="form.phoneNumber"
+            required
+            describedBy="phone-help"
+          />
+        } @placeholder {
+          <div class="phone-placeholder" role="status">Loading phone field…</div>
+        }
+        <p class="field-help" id="phone-help">
+          Choose your country and enter your local number. Each number can belong to only one
+          account.
+        </p>
+      }
+      <label for="password">Password</label>
+      <input
+        id="password"
+        name="password"
+        [(ngModel)]="form.password"
+        required
+        type="password"
+        [autocomplete]="registering() ? 'new-password' : 'current-password'"
+        placeholder="Enter your password"
+      />
+      @if (session.error()) {
+        <p class="form-error" role="alert">{{ session.error() }}</p>
+      }
+      <button class="primary auth-submit" [disabled]="session.busy()">
+        {{ session.busy() ? 'One moment…' : registering() ? 'Create account' : 'Sign in'
+        }}<app-icon name="send" />
+      </button>
+      <p class="auth-switch">
+        {{ registering() ? 'Already have an account?' : 'New to Parley?' }}
+        <button type="button" class="text-button" (click)="toggleRegistration()">
+          {{ registering() ? 'Sign in' : 'Create an account' }}
+        </button>
+      </p>
+    </form>
+    <span class="auth-footnote">Direct chats and groups, in one place</span>
+  </section>
+</main>

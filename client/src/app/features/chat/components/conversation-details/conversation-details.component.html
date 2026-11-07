@@ -1,0 +1,44 @@
+<header>
+  <h2>Conversation details</h2>
+  <button class="icon-button" aria-label="Close details" (click)="close.emit()">
+    <app-icon name="close" />
+  </button>
+</header>
+@if (room(); as conversation) {
+  <app-user-avatar
+    class="detail-avatar"
+    [person]="peer()"
+    [group]="conversation.roomDetails?.type === 'group'"
+    [label]="title()"
+    [size]="64"
+  />
+  <h3>
+    @if (conversation.roomDetails?.type === 'group') {
+      {{ title() }}
+    } @else {
+      <app-user-name [person]="peer()" [label]="title()" />
+    }
+  </h3>
+  <p>
+    {{ conversation.roomDetails?.type === 'group' ? 'Group conversation' : 'Direct conversation' }}
+  </p>
+  <div class="detail-section">
+    <h4>Members</h4>
+    @for (member of conversation.participants ?? []; track member._id) {
+      <p><app-user-name [person]="member" />{{ member._id === account()?._id ? ' (you)' : '' }}</p>
+    }
+    <h4>Your role</h4>
+    <p>{{ conversation.role || 'member' }}</p>
+  </div>
+  @if (canManage()) {
+    <button class="secondary full-width" (click)="manageMembers.emit()">
+      Manage group members
+    </button>
+  }
+}
+<div class="detail-section account">
+  <h4>Your account</h4>
+  <strong><app-user-name [person]="account()" /></strong>
+  <p>People can find you by your username, email or primary phone number.</p>
+</div>
+<button class="secondary full-width" [disabled]="busy()" (click)="signOut.emit()">Sign out</button>

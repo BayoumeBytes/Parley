@@ -1,0 +1,92 @@
+<div class="modal-backdrop" (click)="close()">
+  <section
+    class="modal"
+    #dialog
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modal-title"
+    (click)="$event.stopPropagation()"
+    (keydown)="keydown($event)"
+    tabindex="-1"
+  >
+    <header>
+      <span class="eyebrow">{{ kind() === 'create' ? 'Direct or group' : 'Group settings' }}</span>
+      <button class="icon-button" aria-label="Close dialog" [disabled]="busy()" (click)="close()">
+        <app-icon name="close" />
+      </button>
+    </header>
+    <h2 id="modal-title">{{ kind() === 'create' ? 'Start a conversation' : 'Manage members' }}</h2>
+    <form (ngSubmit)="submit()">
+      @if (kind() === 'create') {
+        <div class="segmented">
+          <button
+            type="button"
+            [class.chosen]="roomType === 'direct'"
+            [attr.aria-pressed]="roomType === 'direct'"
+            (click)="roomType = 'direct'"
+          >
+            Direct chat
+          </button>
+          <button
+            type="button"
+            [class.chosen]="roomType === 'group'"
+            [attr.aria-pressed]="roomType === 'group'"
+            (click)="roomType = 'group'"
+          >
+            Group conversation
+          </button>
+        </div>
+        @if (roomType === 'group') {
+          <label for="room-name">Group name (required)</label>
+          <input
+            id="room-name"
+            name="roomName"
+            [(ngModel)]="roomTitle"
+            required
+            maxlength="100"
+            placeholder="Group name"
+          />
+        }
+      } @else {
+        <label for="member-action">Action</label>
+        <select id="member-action" name="action" [(ngModel)]="memberAction">
+          <option value="add">Add members</option>
+          <option value="remove">Remove members</option>
+        </select>
+      }
+      <label for="member-identifiers">{{
+        kind() === 'create' && roomType === 'direct'
+          ? 'Their username, email or phone'
+          : 'Usernames, emails or phone numbers'
+      }}</label>
+      <textarea
+        id="member-identifiers"
+        name="members"
+        [(ngModel)]="memberIdentifiers"
+        required
+        rows="3"
+        placeholder="alex, sam@example.com, +201012345678"
+      ></textarea>
+      <p class="field-help">
+        Enter an exact username, email or primary phone number with country code. Separate people
+        with commas or new lines.
+        {{
+          kind() === 'create'
+            ? 'You are included automatically.'
+            : 'Only group owners and admins can change membership.'
+        }}
+      </p>
+      @if (validationError() || error()) {
+        <p class="form-error" role="alert">{{ validationError() || error() }}</p>
+      }
+      <div class="modal-actions">
+        <button type="button" class="secondary" [disabled]="busy()" (click)="close()">
+          Cancel
+        </button>
+        <button class="primary" [disabled]="busy()">
+          {{ busy() ? 'One moment…' : kind() === 'create' ? 'Start conversation' : 'Save changes' }}
+        </button>
+      </div>
+    </form>
+  </section>
+</div>

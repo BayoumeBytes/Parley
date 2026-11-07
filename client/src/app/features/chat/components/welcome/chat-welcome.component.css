@@ -1,0 +1,59 @@
+:host {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 32px;
+}
+h2 {
+  font:
+    500 clamp(28px, 3vw, 40px)/1.2 'Manrope',
+    sans-serif;
+  letter-spacing: -0.02em;
+  margin: 16px 0;
+  max-width: 480px;
+}
+p {
+  color: var(--secondary);
+  max-width: 400px;
+  margin-bottom: 24px;
+  line-height: 1.75;
+}
+.welcome-note {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 32px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.welcome-art {
+  width: 224px;
+  height: 128px;
+  position: relative;
+  margin-bottom: 32px;
+}
+.welcome-art span {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--selected);
+  color: var(--accent);
+  padding: 16px 32px;
+  border-radius: 20px 20px 20px 4px;
+  transform: rotate(-6deg);
+  font:
+    500 24px/1.5 'DM Sans',
+    sans-serif;
+}
+.welcome-art span + span {
+  top: 56px;
+  left: 64px;
+  background: var(--sand);
+  color: var(--sand-ink);
+  transform: rotate(6deg);
+  border-radius: 20px 20px 4px 20px;
+  white-space: nowrap;
+}

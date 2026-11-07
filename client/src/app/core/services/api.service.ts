@@ -4,6 +4,7 @@ export class ApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    readonly code?: string,
   ) {
     super(message);
   }
@@ -28,6 +29,7 @@ export class ApiService {
       throw new ApiError(
         data.error || data.message || 'Something went wrong. Please try again.',
         response.status,
+        data.code,
       );
     }
     return data as T;

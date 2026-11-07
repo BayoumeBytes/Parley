@@ -1,0 +1,128 @@
+:host {
+  display: block;
+}
+.auth-layout {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.auth-story {
+  background: var(--story);
+  padding: 40px 9%;
+  display: flex;
+  flex-direction: column;
+}
+.story-content {
+  margin: auto 0;
+  padding: 64px 0 40px;
+}
+.story-content h1 {
+  font:
+    500 clamp(36px, 3.6vw, 52px)/1.12 'Manrope',
+    sans-serif;
+  letter-spacing: -0.02em;
+  margin: 24px 0;
+  max-width: 520px;
+}
+.story-content p {
+  font-size: 16px;
+  line-height: 1.75;
+  max-width: 380px;
+  color: var(--secondary);
+}
+.conversation-art {
+  min-height: 208px;
+  padding: 40px 0 0 16px;
+  max-width: 384px;
+}
+.art-note,
+.art-reply {
+  width: fit-content;
+  padding: 16px 24px;
+  border-radius: 16px 16px 16px 4px;
+  background: var(--surface);
+  font-size: 16px;
+  transform: rotate(-4deg);
+}
+.art-reply {
+  margin: 16px 0 0 auto;
+  background: var(--accent);
+  color: var(--on-accent);
+  transform: rotate(4deg);
+  border-radius: 16px 16px 4px 16px;
+}
+.art-dots {
+  display: flex;
+  gap: 4px;
+  margin: 24px 0;
+}
+.art-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--secondary);
+}
+.story-footer,
+.auth-footnote {
+  color: var(--secondary);
+  font-size: 12px;
+}
+.auth-form-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 32px 80px;
+  position: relative;
+  background: var(--surface);
+}
+.auth-form {
+  width: min(100%, 368px);
+}
+.auth-form h2 {
+  font:
+    500 32px/1.25 'Manrope',
+    sans-serif;
+  margin: 12px 0;
+}
+.auth-form > p {
+  color: var(--secondary);
+}
+.auth-form > .form-error {
+  color: var(--error-text);
+}
+.auth-form .auth-switch {
+  text-align: center;
+  font-size: 13px;
+}
+.auth-switch button {
+  margin-left: 4px;
+}
+.auth-footnote {
+  position: absolute;
+  bottom: 24px;
+}
+@media (max-width: 700px) {
+  .auth-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+  .auth-story {
+    padding: 24px;
+  }
+  .story-content,
+  .story-footer {
+    display: none;
+  }
+  .auth-form-area {
+    padding: 40px 24px 72px;
+  }
+  .auth-form h2 {
+    font-size: 28px;
+  }
+}
+@media (max-height: 540px) {
+  .auth-form-area {
+    justify-content: flex-start;
+  }
+}

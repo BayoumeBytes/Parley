@@ -1,0 +1,49 @@
+:host {
+  display: block;
+}
+.phone-gate {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.phone-card {
+  width: min(100%, 440px);
+  padding: 32px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.phone-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.phone-identity {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 32px 0 24px;
+}
+.phone-identity strong {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.phone-card h1 {
+  font:
+    500 28px/1.3 'Manrope',
+    sans-serif;
+  margin-bottom: 16px;
+}
+.phone-card > p {
+  color: var(--secondary);
+}
+@media (max-width: 480px) {
+  .phone-gate {
+    padding: 16px;
+  }
+  .phone-card {
+    padding: 24px;
+  }
+}

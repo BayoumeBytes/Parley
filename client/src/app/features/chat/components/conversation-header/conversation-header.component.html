@@ -1,0 +1,40 @@
+<button class="icon-button back" aria-label="Back to conversations" (click)="back.emit()">
+  <app-icon name="back" />
+</button>
+<app-user-avatar
+  class="small"
+  [person]="peer()"
+  [group]="room().roomDetails?.type === 'group'"
+  [label]="title()"
+/>
+<div class="chat-title">
+  <h2>
+    @if (room().roomDetails?.type === 'group') {
+      {{ title() }}
+    } @else {
+      <app-user-name [person]="peer()" [label]="title()" />
+    }
+  </h2>
+  <p>
+    {{ room().roomDetails?.type === 'group' ? 'Group conversation' : 'Direct conversation' }}
+    <span>·</span> {{ connected() ? 'Live updates on' : 'Live updates reconnecting' }}
+  </p>
+</div>
+<button
+  class="icon-button"
+  title="Refresh history"
+  aria-label="Refresh history"
+  [disabled]="loading()"
+  (click)="refresh.emit()"
+>
+  <app-icon name="refresh" />
+</button>
+<button
+  class="icon-button"
+  title="Conversation details"
+  aria-label="Conversation details"
+  [attr.aria-expanded]="detailsOpen()"
+  (click)="toggleDetails.emit()"
+>
+  <app-icon name="info" />
+</button>

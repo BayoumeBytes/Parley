@@ -1,0 +1,45 @@
+<div class="conversation-start">
+  <span class="start-line"></span><span>Conversation history</span><span class="start-line"></span>
+</div>
+@if (loading()) {
+  <p class="feed-status" role="status">Loading conversation…</p>
+}
+@for (group of groups(); track group.id; let index = $index) {
+  @if (
+    index === 0 ||
+    (group.createdAt | date: 'yyyy-MM-dd') !== (groups()[index - 1].createdAt | date: 'yyyy-MM-dd')
+  ) {
+    <div class="date-divider">{{ group.createdAt | date: 'longDate' }}</div>
+  }
+  <article class="message-row" [class.mine]="group.sender === account()?._id">
+    <app-user-avatar
+      class="message-avatar"
+      [person]="person(group.sender)"
+      [label]="label(group.sender)"
+      [size]="32"
+    />
+    <div class="message-content">
+      <div class="message-meta">
+        <strong
+          ><app-user-name [person]="person(group.sender)" [label]="label(group.sender)"
+        /></strong>
+        <time [attr.datetime]="group.createdAt" [title]="group.createdAt | date: 'medium'">{{
+          group.createdAt | date: 'shortTime'
+        }}</time>
+      </div>
+      <div class="message-stack">
+        @for (message of group.messages; track message._id) {
+          <p class="message-text">{{ message.message }}</p>
+        }
+      </div>
+    </div>
+  </article>
+} @empty {
+  @if (!loading()) {
+    <div class="feed-empty">
+      <span class="empty-symbol">“</span>
+      <h2>No messages yet</h2>
+      <p>Send the first message to {{ title() }}</p>
+    </div>
+  }
+}

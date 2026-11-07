@@ -1,0 +1,77 @@
+:host {
+  display: block;
+  background: var(--page);
+  padding: 24px 20px;
+  border-left: 1px solid var(--border);
+  overflow: auto;
+}
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+header h2 {
+  font-size: 14px;
+  font-weight: 500;
+}
+.detail-avatar {
+  display: grid;
+  margin: 32px auto 16px;
+}
+h3 {
+  text-align: center;
+  font:
+    500 20px/1.4 'Manrope',
+    sans-serif;
+  overflow-wrap: anywhere;
+}
+:host > p {
+  text-align: center;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--secondary);
+}
+.detail-section {
+  border-top: 1px solid var(--border);
+  padding-top: 24px;
+  margin-top: 24px;
+}
+.detail-section h4 {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+  margin: 0 0 12px;
+}
+.detail-section h4:not(:first-child) {
+  margin-top: 24px;
+}
+.detail-section p {
+  color: var(--secondary);
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+}
+.detail-section strong {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.full-width {
+  width: 100%;
+  margin-top: 24px;
+}
+@media (max-width: 1100px) {
+  :host {
+    position: fixed;
+    z-index: 3;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 280px;
+    box-shadow: -8px 0 24px var(--shadow);
+  }
+}
+@media (max-width: 700px) {
+  :host {
+    width: min(320px, calc(100vw - 56px));
+  }
+}

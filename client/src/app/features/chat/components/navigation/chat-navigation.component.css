@@ -1,0 +1,53 @@
+:host {
+  background: var(--raised);
+  border-right: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 32px;
+  padding: 24px 0;
+}
+.brand-mark {
+  width: 36px;
+  height: 36px;
+  font-size: 28px;
+}
+.rail-chat {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  background: var(--surface);
+  color: var(--accent);
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.rail-bottom {
+  margin-top: auto;
+  display: grid;
+  justify-items: center;
+  gap: 24px;
+}
+.account-button {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+@media (max-width: 700px) {
+  :host {
+    padding: 20px 0;
+  }
+  .rail-chat {
+    width: 40px;
+    height: 40px;
+  }
+  .brand-mark {
+    width: 32px;
+    height: 32px;
+    font-size: 28px;
+  }
+}

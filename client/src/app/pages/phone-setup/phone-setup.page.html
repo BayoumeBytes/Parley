@@ -1,0 +1,46 @@
+<main class="phone-gate">
+  <section class="phone-card" aria-labelledby="phone-title">
+    <header class="phone-header">
+      <a href="/" class="brand"><span class="brand-mark">p</span>parley</a><app-theme-toggle />
+    </header>
+    <div class="phone-identity">
+      <app-user-avatar [person]="session.account()" /><strong
+        ><app-user-name [person]="session.account()"
+      /></strong>
+    </div>
+    <h1 id="phone-title">Add your primary phone number</h1>
+    <p>Your account needs a unique primary number before you can continue to your conversations.</p>
+    <form (ngSubmit)="submit()">
+      <label for="required-phone">Primary phone number</label>
+      @defer (on immediate) {
+        <app-phone-input
+          inputId="required-phone"
+          name="primaryPhone"
+          [(ngModel)]="phoneNumber"
+          required
+          describedBy="required-phone-help"
+        />
+      } @placeholder {
+        <div class="phone-placeholder" role="status">Loading phone field…</div>
+      }
+      <p class="field-help" id="required-phone-help">
+        Choose your country and enter your local number. This adds the number to your account; no
+        SMS code is sent.
+      </p>
+      @if (session.error()) {
+        <p class="form-error" role="alert">{{ session.error() }}</p>
+      }
+      <button class="primary auth-submit" [disabled]="session.busy()">
+        {{ session.busy() ? 'Saving…' : 'Save and continue' }}
+      </button>
+    </form>
+    <button
+      type="button"
+      class="text-button"
+      [disabled]="session.busy()"
+      (click)="session.logout()"
+    >
+      Sign out
+    </button>
+  </section>
+</main>

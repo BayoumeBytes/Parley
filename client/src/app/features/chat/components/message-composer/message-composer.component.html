@@ -1,0 +1,35 @@
+<div class="typing-status" role="status">
+  @if (typingCount()) {
+    <span class="typing-dots">•••</span>
+    {{ typingCount() === 1 ? 'Someone is' : 'People are' }} typing…
+  }
+</div>
+<form class="composer" (ngSubmit)="submit()">
+  <label class="sr-only" for="message">Message</label>
+  <textarea
+    id="message"
+    name="message"
+    [ngModel]="draft()"
+    (ngModelChange)="update($event)"
+    (blur)="blurred.emit()"
+    (keydown)="keydown($event)"
+    [maxlength]="maxLength"
+    rows="1"
+    placeholder="Write a message"
+    [readOnly]="sending()"
+  ></textarea>
+  <button
+    type="submit"
+    class="primary send"
+    [disabled]="!draft().trim() || sending()"
+    [attr.aria-label]="sending() ? 'Sending message' : 'Send message'"
+    [attr.aria-busy]="sending()"
+    [title]="sending() ? 'Sending message' : 'Send message'"
+  >
+    <app-icon name="paper-plane" />
+  </button>
+</form>
+<div class="composer-hint">
+  <span><kbd>Enter</kbd> to send · <kbd>Shift + Enter</kbd> for a new line</span>
+  <span>{{ draft().length.toLocaleString() }} / {{ maxLength.toLocaleString() }}</span>
+</div>

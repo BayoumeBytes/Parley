@@ -1,0 +1,74 @@
+<header class="sidebar-heading">
+  <div>
+    <span class="eyebrow">Parley</span>
+    <h1>Conversations</h1>
+  </div>
+  <button
+    class="icon-button new-chat"
+    aria-label="New conversation"
+    title="New conversation"
+    (click)="createConversation.emit()"
+  >
+    <app-icon name="plus" />
+  </button>
+</header>
+<label class="search-box"
+  ><app-icon name="search" /><input
+    aria-label="Search conversations"
+    placeholder="Search conversations"
+    [ngModel]="search()"
+    (ngModelChange)="search.set($event)"
+/></label>
+<div class="list-heading">
+  <span>All conversations</span><span>{{ rooms().length }}</span>
+</div>
+<div class="room-list">
+  @for (room of filtered(); track room.room) {
+    <button
+      class="room-item"
+      [class.selected]="selectedId() === room.room"
+      (click)="roomSelected.emit(room)"
+      [attr.aria-current]="selectedId() === room.room ? 'true' : null"
+    >
+      <app-user-avatar
+        [person]="peer(room)"
+        [group]="room.roomDetails?.type === 'group'"
+        [label]="title(room)"
+      />
+      <span class="room-summary">
+        <span class="room-title">
+          @if (room.roomDetails?.type === 'group') {
+            {{ title(room) }}
+          } @else {
+            <app-user-name [person]="peer(room)" [label]="title(room)" />
+          }
+        </span>
+        <span class="room-preview">{{ previews()[room.room] || 'Open the conversation' }}</span>
+      </span>
+      @if (unread()[room.room]) {
+        <span class="unread">{{ unread()[room.room] }}</span>
+      }
+    </button>
+  } @empty {
+    <div class="sidebar-empty">
+      <span class="empty-symbol">“</span>
+      <h3>{{ search() ? 'No conversations found' : 'No conversations yet' }}</h3>
+      <p>
+        {{
+          search()
+            ? 'Try a different name.'
+            : 'Start a direct chat or bring everyone together in a group.'
+        }}
+      </p>
+      @if (!search()) {
+        <button class="text-button" (click)="createConversation.emit()">
+          Start a conversation <app-icon name="send" />
+        </button>
+      }
+    </div>
+  }
+</div>
+<footer class="sidebar-footer">
+  <span class="connection-dot" [class.online]="connected()"></span
+  ><span>{{ connected() ? 'Live updates connected' : 'Reconnecting to live updates…' }}</span>
+</footer>

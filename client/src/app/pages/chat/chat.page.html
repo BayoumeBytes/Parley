@@ -1,0 +1,92 @@
+<div class="workspace" [class.room-open]="!!chat.selected()" [class.with-details]="details()">
+  <app-chat-navigation
+    [account]="session.account()"
+    [connected]="chat.connected()"
+    (showList)="chat.closeRoom()"
+    (toggleDetails)="details.set(!details())"
+  />
+  <app-conversation-sidebar
+    [rooms]="chat.rooms()"
+    [currentUserId]="session.userId()"
+    [selectedId]="chat.selectedId()"
+    [unread]="chat.unread()"
+    [previews]="chat.previews()"
+    [connected]="chat.connected()"
+    (roomSelected)="selectRoom($event)"
+    (createConversation)="openDialog('create')"
+  />
+  <main class="chat-panel">
+    @if (chat.error()) {
+      <div class="banner error" role="alert">
+        <span>{{ chat.error() }}</span
+        ><button class="icon-button" aria-label="Dismiss error" (click)="chat.error.set('')">
+          <app-icon name="close" />
+        </button>
+      </div>
+    }
+    @if (chat.notice()) {
+      <div class="banner" role="status">
+        <span>{{ chat.notice() }}</span
+        ><button
+          class="icon-button"
+          aria-label="Dismiss notification"
+          (click)="chat.notice.set('')"
+        >
+          <app-icon name="close" />
+        </button>
+      </div>
+    }
+    @if (chat.selected(); as room) {
+      <app-conversation-header
+        [room]="room"
+        [currentUserId]="session.userId()"
+        [connected]="chat.connected()"
+        [loading]="chat.loadingHistory()"
+        [detailsOpen]="details()"
+        (back)="chat.closeRoom()"
+        (refresh)="chat.loadHistory(room.room)"
+        (toggleDetails)="details.set(!details())"
+      />
+      <app-message-list
+        [messages]="chat.activeMessages()"
+        [account]="session.account()"
+        [participants]="room.participants ?? []"
+        [loading]="chat.loadingHistory()"
+        [title]="title(room, session.userId())"
+      />
+      <app-message-composer
+        [(draft)]="draft"
+        [sending]="chat.sending()"
+        [typingCount]="chat.typingUsers()[room.room]?.length ?? 0"
+        (sendRequested)="send()"
+        (typingChanged)="chat.typing(!!draft().trim())"
+        (blurred)="chat.stopTyping()"
+      />
+    } @else {
+      <app-chat-welcome
+        [connected]="chat.connected()"
+        (createConversation)="openDialog('create')"
+      />
+    }
+  </main>
+  @if (details()) {
+    <app-conversation-details
+      [account]="session.account()"
+      [room]="chat.selected()"
+      [canManage]="chat.canManage()"
+      [busy]="session.busy()"
+      (close)="details.set(false)"
+      (manageMembers)="openDialog('members')"
+      (signOut)="session.logout()"
+    />
+  }
+</div>
+@if (dialog(); as kind) {
+  <app-conversation-dialog
+    [kind]="kind"
+    [busy]="chat.mutating()"
+    [error]="chat.error()"
+    (submitted)="submitDialog($event)"
+    (closed)="dialog.set(null)"
+  />
+}
