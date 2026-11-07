@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { requirePhone } from "../middleware/requirePhone.js";
 import { resolveUsers } from "../controllers/UserController.js";
 import {
   CreateGroup,
@@ -7,7 +8,7 @@ import {
   RemoveMembers,
   GetRooms,
 } from "../controllers/ConversationController.js";
-import { logout, login, register } from "../controllers/AuthController.js";
+import { logout, login, register, me, addPhone } from "../controllers/AuthController.js";
 import {
   GetHistoryMessages,
   SendMessage,
@@ -17,6 +18,8 @@ export const AuthRouter = Router();
 AuthRouter.post("/login", login);
 AuthRouter.post("/register", register);
 AuthRouter.post("/logout", requireAuth, logout);
+AuthRouter.get("/me", requireAuth, me);
+AuthRouter.post("/phone", requireAuth, addPhone);
 
 export const ConvRouter = Router();
 
@@ -34,6 +37,7 @@ export const router = Router();
 router.use("/auth", AuthRouter);
 
 router.use(requireAuth);
+router.use(requirePhone);
 
 router.post("/users/resolve", resolveUsers);
 router.use("/conv", ConvRouter);

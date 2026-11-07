@@ -4,6 +4,7 @@ import { corsOptions } from "../config/config.js";
 import { COOKIE_NAME, findValidSession } from "../middleware/requireAuth.js";
 import { MemberShipModel } from "../models/MemberShip.js";
 import { SendChatMessage } from "../services/MessagesService.js";
+import { GetAccount } from "../services/AccountService.js";
 import {
   chatError,
   requireRoomMember,
@@ -35,6 +36,13 @@ export function initSockets(server) {
           socket.request.cookies[COOKIE_NAME],
         );
         if (!session) return next(new Error("Unauthorized"));
+        const user = await GetAccount(String(session.userId));
+        if (user.requiresPhone) {
+          const required = new Error("Add a primary phone number to continue");
+          required.data = { code: "PHONE_REQUIRED", user };
+          return next(required);
+        }
+        socket.data.user = user;
         socket.data.userId = session.userId.toString();
         socket.data.sessionId = session.sessionId;
         socket.data.expiresAt = new Date(session.expiresAt).getTime();
@@ -64,6 +72,7 @@ export function initSockets(server) {
       await socket.join(memberships.map(({ room }) => roomChannel(room)));
       socket.emit("ready", {
         userId,
+        user: socket.data.user,
         rooms: memberships.map(({ room }) => String(room)),
       });
     })().catch(() => {

@@ -4,6 +4,8 @@ import { hash, verify } from "../utils/password.util.js";
 import { generateSessionID } from "./SessionService.js";
 import { normalizePhone } from "../utils/phone.util.js";
 import { chatError } from "./RoomAccessService.js";
+import { accountProfile } from "./AccountService.js";
+import { accountColor } from "../../../shared/account-color.mjs";
 import { config } from "../config/config.js";
 
 export async function SignIn(username, password) {
@@ -14,6 +16,7 @@ export async function SignIn(username, password) {
   if (!verify(password, user.password)) {
     return "Invalid password";
   }
+  const profile = await accountProfile(user);
   const sessionId = generateSessionID();
   const expiresAt = new Date(Date.now() + config.sessionTtlMs);
   const session = new SessionModel({
@@ -23,7 +26,7 @@ export async function SignIn(username, password) {
   });
   await session.save();
 
-  return { sessionId, expiresAt };
+  return { sessionId, expiresAt, user: profile };
 }
 
 export async function Register(username, password, email, phoneNumber) {
@@ -45,5 +48,6 @@ export async function Register(username, password, email, phoneNumber) {
   }
   const hashedPassword = hash(password);
   const Newuser = new UserModel({ username, password: hashedPassword, email, phoneNumber });
+  Newuser.color = accountColor(String(Newuser._id));
   await Newuser.save();
 }

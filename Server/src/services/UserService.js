@@ -1,6 +1,7 @@
 import { UserModel } from "../models/Users.js";
 import { normalizePhone } from "../utils/phone.util.js";
 import { chatError } from "./RoomAccessService.js";
+import { publicUser } from "./AccountService.js";
 
 // Exact lookups only: do not expose a browsable directory or private contact fields.
 export async function ResolveUsers(identifiers) {
@@ -17,14 +18,14 @@ export async function ResolveUsers(identifiers) {
     $or: lookups.flatMap(({ value, phone }) => [
       { username: value }, { email: value }, ...(phone ? [{ phoneNumber: phone }] : []),
     ]),
-  }).select("_id username email phoneNumber").lean();
+  }).select("_id username email phoneNumber color").lean();
 
   const resolved = lookups.map(({ value, phone }) => {
     const matches = users.filter((user) => user.username === value || user.email === value ||
       (phone && user.phoneNumber === phone));
     if (!matches.length) throw chatError(404, `No user found for "${value}"`);
     if (matches.length > 1) throw chatError(409, `More than one user matches "${value}". Use a different identifier`);
-    return { _id: String(matches[0]._id), username: matches[0].username };
+    return publicUser(matches[0]);
   });
   return [...new Map(resolved.map((user) => [user._id, user])).values()];
 }

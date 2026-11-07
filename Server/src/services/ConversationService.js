@@ -1,5 +1,6 @@
 import { RoomModel } from "../models/Room.js";
 import { MemberShipModel } from "../models/MemberShip.js";
+import { publicUser } from "./AccountService.js";
 
 /**
  * @param {unknown[]} list
@@ -114,25 +115,26 @@ export async function GetUserRooms(userId) {
   try {
     const membership = await MemberShipModel.find({ user: userId })
       .select("room user role -_id")
-      .populate("user", "username _id")
+      .populate("user", "username _id color")
       .populate("room", "name type")
       .lean();
     if (!membership) return null;
     const roomIds = membership.filter((entry) => entry.room).map((entry) => entry.room._id ?? entry.room);
     const participants = roomIds.length ? await MemberShipModel.find({ room: { $in: roomIds } })
       .select("room user -_id")
-      .populate("user", "username _id")
+      .populate("user", "username _id color")
       .lean() : [];
     const participantsByRoom = new Map();
     for (const member of participants) {
       if (!member.user) continue;
       const roomId = String(member.room);
       const users = participantsByRoom.get(roomId) ?? [];
-      users.push({ _id: member.user._id ?? member.user, username: member.user.username });
+      users.push(publicUser(member.user));
       participantsByRoom.set(roomId, users);
     }
     return membership.filter((entry) => entry.room).map((entry) => ({
       ...entry,
+      user: publicUser(entry.user),
       room: entry.room._id ?? entry.room,
       roomDetails: entry.room._id ? entry.room : undefined,
       participants: participantsByRoom.get(String(entry.room._id ?? entry.room)) ?? [],

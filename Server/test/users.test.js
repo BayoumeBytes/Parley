@@ -5,6 +5,7 @@ import { UserModel } from "../src/models/Users.js";
 import { SessionModel } from "../src/models/Session.js";
 import { ResolveUsers } from "../src/services/UserService.js";
 import { normalizePhone } from "../src/utils/phone.util.js";
+import { accountColor } from "../../shared/account-color.mjs";
 
 const server = createServer(app);
 const alice = "000000000000000000000001";
@@ -13,6 +14,12 @@ const signup = { username: "alice", email: "alice@example.com", password: "secre
 const query = (users) => ({ select: jest.fn().mockReturnThis(), lean: async () => users });
 
 afterEach(() => jest.restoreAllMocks());
+beforeEach(() => {
+  jest.spyOn(UserModel, "findById").mockReturnValue({
+    select() { return this; },
+    lean: async () => ({ _id: alice, username: "alice", phoneNumber: "+12025550123", color: accountColor(alice) }),
+  });
+});
 
 test("normalizes phone formatting and rejects missing country codes or invalid lengths", () => {
   expect(normalizePhone("+1 (202) 555-0123")).toBe("+12025550123");
@@ -39,6 +46,7 @@ test("registration requires and persists the normalized primary phone", async ()
     { username: "alice" }, { email: "alice@example.com" }, { phoneNumber: "+12025550123" },
   ] });
   expect(save.mock.instances[0].phoneNumber).toBe("+12025550123");
+  expect(save.mock.instances[0].color).toBe(accountColor(String(save.mock.instances[0]._id)));
   expect(save.mock.instances[0].password).not.toBe(signup.password);
 });
 
@@ -70,7 +78,7 @@ test("authenticated exact lookups resolve username, email and formatted phone wi
   const find = jest.spyOn(UserModel, "find").mockReturnValue(query([bob]));
   const response = await localRequest(server).post("/api/users/resolve").set("Cookie", "session=alice")
     .send({ identifiers: ["bob", "bob@example.com", "+20 101 234 5678"] }).expect(200);
-  expect(response.body).toEqual({ users: [{ _id: bob._id, username: "bob" }] });
+  expect(response.body).toEqual({ users: [{ _id: bob._id, username: "bob", color: accountColor(bob._id) }] });
   expect(find.mock.calls[0][0].$or).toContainEqual({ phoneNumber: "+201012345678" });
 });
 

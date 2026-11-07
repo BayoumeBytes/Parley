@@ -1,3 +1,5 @@
+import { fileURLToPath } from "node:url";
+
 /**
  * For a detailed explanation regarding each configuration property, visit:
  * https://jestjs.io/docs/configuration
@@ -128,6 +130,9 @@ const config = {
 
   // A list of paths to directories that Jest should use to search for files in
   roots: ["<rootDir>/test"],
+  transform: {
+    "^.+\\.[cm]?jsx?$": ["babel-jest", { configFile: fileURLToPath(new URL("./babel.config.cjs", import.meta.url)) }],
+  },
 
   // Allows you to use a custom runner instead of Jest's default test runner
   // runner: "jest-runner",

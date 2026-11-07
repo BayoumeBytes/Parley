@@ -2,6 +2,7 @@ import { SignIn, Register } from "../services/AuthService.js";
 import { COOKIE_NAME, cookieOptions } from "../middleware/requireAuth.js";
 import { SessionModel } from "../models/Session.js";
 import { disconnectSession } from "../sockets/events.js";
+import { AddPrimaryPhone, GetAccount } from "../services/AccountService.js";
 
 export { COOKIE_NAME, cookieOptions };
 
@@ -27,7 +28,7 @@ export async function login(req, res) {
       ...cookieOptions,
       expires: new Date(result.expiresAt),
     });
-    return res.status(200).json({ message: "logged in" });
+    return res.status(200).json({ message: "logged in", user: result.user });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -62,4 +63,24 @@ export async function logout(req, res) {
   disconnectSession(req.sessionId);
   res.clearCookie(COOKIE_NAME, cookieOptions);
   return res.status(200).json({ message: "logged out" });
+}
+
+export async function me(req, res) {
+  try {
+    return res.json({ user: await GetAccount(req.user.id) });
+  } catch (error) {
+    return res.status(error.status || 500).json({
+      error: error.status ? error.message : "Unable to load account",
+    });
+  }
+}
+
+export async function addPhone(req, res) {
+  try {
+    return res.json({ user: await AddPrimaryPhone(req.user.id, req.body?.phoneNumber) });
+  } catch (error) {
+    return res.status(error.status || 500).json({
+      error: error.status ? error.message : "Unable to save primary phone number",
+    });
+  }
 }

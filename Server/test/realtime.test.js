@@ -12,6 +12,7 @@ import { RoomModel } from "../src/models/Room.js";
 import { UserModel } from "../src/models/Users.js";
 import { hash } from "../src/utils/password.util.js";
 import { SocketClient } from "./helpers/SocketClient.js";
+import { accountColor } from "../../shared/account-color.mjs";
 
 const alice = "000000000000000000000001";
 const bob = "000000000000000000000002";
@@ -39,6 +40,13 @@ beforeEach(async () => {
     { room: otherRoom, user: eve, role: "owner" },
   ];
   messages = [];
+  jest.spyOn(UserModel, "findById").mockImplementation((id) => ({
+    select() { return this; },
+    lean: async () => ({
+      _id: String(id), username: String(id) === bob ? "bob" : "alice",
+      color: accountColor(String(id)), phoneNumber: "+12025550123",
+    }),
+  }));
   jest.spyOn(SessionModel, "findOne").mockImplementation(async ({ sessionId }) => sessions.get(sessionId) ?? null);
   jest.spyOn(SessionModel, "deleteOne").mockImplementation(async ({ sessionId }) => sessions.delete(sessionId));
   jest.spyOn(MemberShipModel, "findOne").mockImplementation(async (filter) => memberships.find((m) =>
@@ -174,8 +182,8 @@ test("room listings preserve room IDs and expose populated metadata and role", a
     .set("Cookie", "session=alice").send({}).expect(200);
   expect(response.body.result).toEqual([{
     room, roomDetails: { _id: room, name: "Team", type: "group" },
-    user: { _id: alice, username: "alice" }, role: "owner",
-    participants: [{ _id: alice, username: "alice" }, { _id: bob, username: "bob" }],
+    user: { _id: alice, username: "alice", color: accountColor(alice) }, role: "owner",
+    participants: [{ _id: alice, username: "alice", color: accountColor(alice) }, { _id: bob, username: "bob", color: accountColor(bob) }],
   }]);
   expect(query.select).toHaveBeenCalledWith("room user role -_id");
   expect(query.populate).toHaveBeenCalledWith("room", "name type");
@@ -234,7 +242,9 @@ test("logout deletes the session, disconnects its tabs, and prevents reconnect",
 });
 
 test("login sets the same development cookie used by REST and Socket.IO", async () => {
-  jest.spyOn(UserModel, "findOne").mockResolvedValue({ _id: alice, password: hash("secret") });
+  jest.spyOn(UserModel, "findOne").mockResolvedValue({
+    _id: alice, username: "alice", password: hash("secret"), color: accountColor(alice), phoneNumber: "+12025550123",
+  });
   jest.spyOn(SessionModel.prototype, "save").mockImplementation(async function () {
     sessions.set(this.sessionId, this);
     return this;
@@ -266,4 +276,21 @@ test("HTTP and socket handshakes share credentialed CORS and block untrusted ori
   expect(response.headers["access-control-allow-credentials"]).toBe("true");
   await request(server).get("/socket.io/?EIO=4&transport=polling")
     .set("Origin", "https://untrusted.example").expect(403);
+});
+
+test("socket initialization backfills missing colors and blocks accounts without a phone before joining rooms", async () => {
+  UserModel.findById.mockReturnValue({
+    select() { return this; },
+    lean: async () => ({ _id: alice, username: "alice" }),
+  });
+  const update = jest.spyOn(UserModel, "updateOne").mockResolvedValue({ modifiedCount: 1 });
+  const client = new SocketClient(network ? baseUrl : io, "session=alice");
+  clients.push(client);
+  await client.connect();
+  expect(await client.next("connect_error")).toMatchObject({
+    message: "Add a primary phone number to continue",
+    data: { code: "PHONE_REQUIRED", user: { requiresPhone: true, color: accountColor(alice) } },
+  });
+  expect(update).toHaveBeenCalled();
+  expect(MemberShipModel.find).not.toHaveBeenCalled();
 });
