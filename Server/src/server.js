@@ -14,7 +14,7 @@ async function start() {
       process.exit(1);
     });
 
-    server.listen(config.port, () => {
+    server.listen(config.port, config.host, () => {
       console.log(`Server running on port ${config.port}`);
     });
   } catch (error) {

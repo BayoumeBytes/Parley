@@ -1,7 +1,7 @@
-import "dotenv/config";
+import { config } from "../config/config.js";
 import { SessionModel } from "../models/Session.js";
 
-const isProd = process.env.NODE_ENV === "production";
+const isProd = config.nodeEnv === "production";
 export const COOKIE_NAME = isProd ? "__Host-session" : "session";
 export const cookieOptions = {
   httpOnly: true,

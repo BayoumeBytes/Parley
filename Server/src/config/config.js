@@ -1,25 +1,19 @@
-import "dotenv/config";
+import "./load-env.cjs";
 import mongoose from "mongoose";
+import { parseServerEnv } from "./env.js";
 
-export const config = {
-  port: process.env.PORT || 3000,
-  db: {
-    host: "localhost",
-    port: 27017,
-    name: "Parley",
-  },
-  clientUrl: process.env.CLIENT_URL || "http://localhost:4200",
-};
+export const config = parseServerEnv(process.env);
 
 export const corsOptions = { origin: config.clientUrl, credentials: true };
 
-function connectionString() {
-  return `mongodb://${config.db.host}:${config.db.port}/${config.db.name}`;
-}
-
 export async function connectToDb() {
-  await mongoose.connect(connectionString(), {
-    serverSelectionTimeoutMS: 2000,
-  });
-  console.log("Conncted to mongodb");
+  try {
+    await mongoose.connect(config.mongoUri, {
+      serverSelectionTimeoutMS: config.mongoTimeoutMs,
+    });
+  } catch {
+    // Driver errors can contain credentials from a connection URI.
+    throw new Error("Unable to connect to MongoDB; check MONGODB_URI and database availability");
+  }
+  console.log("Connected to MongoDB");
 }

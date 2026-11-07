@@ -1,4 +1,6 @@
 Server/node_modules/
-Server/.env
+.env
+.env.*
+!.env.example
 graphify-out/
 Server/wiki/

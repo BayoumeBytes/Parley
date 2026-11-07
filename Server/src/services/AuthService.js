@@ -4,6 +4,7 @@ import { hash, verify } from "../utils/password.util.js";
 import { generateSessionID } from "./SessionService.js";
 import { normalizePhone } from "../utils/phone.util.js";
 import { chatError } from "./RoomAccessService.js";
+import { config } from "../config/config.js";
 
 export async function SignIn(username, password) {
   const user = await UserModel.findOne({ username });
@@ -14,7 +15,7 @@ export async function SignIn(username, password) {
     return "Invalid password";
   }
   const sessionId = generateSessionID();
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  const expiresAt = new Date(Date.now() + config.sessionTtlMs);
   const session = new SessionModel({
     sessionId: sessionId,
     userId: user._id,
