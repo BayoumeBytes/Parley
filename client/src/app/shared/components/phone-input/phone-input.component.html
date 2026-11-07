@@ -1,0 +1,47 @@
+<div class="phone-field" [class.invalid]="!!errorText()" [class.disabled]="disabled()">
+  <div class="country-picker">
+    <span class="country-summary" aria-hidden="true">
+      @if (selection(); as selected) {
+        <span class="flag">{{ selected.flag }}</span
+        ><span>+{{ selected.callingCode }}</span>
+      } @else {
+        <span>Country</span>
+      }
+      <span class="chevron"></span>
+    </span>
+    <select
+      [id]="inputId() + '-country'"
+      aria-label="Phone country"
+      autocomplete="country"
+      [value]="country()"
+      [disabled]="disabled()"
+      (change)="changeCountry($any($event.target).value)"
+      (blur)="blur()"
+    >
+      <option value="" disabled>Choose a country</option>
+      @for (option of countries; track option.code) {
+        <option [value]="option.code">
+          {{ option.name }} (+{{ option.callingCode }}) {{ option.flag }}
+        </option>
+      }
+    </select>
+  </div>
+  <input
+    [id]="inputId()"
+    type="tel"
+    inputmode="tel"
+    autocomplete="tel-national"
+    placeholder="Local phone number"
+    maxlength="40"
+    [value]="national()"
+    [required]="required()"
+    [disabled]="disabled()"
+    [attr.aria-describedby]="descriptionIds() || null"
+    [attr.aria-invalid]="errorText() ? 'true' : null"
+    (input)="changeNumber($any($event.target).value)"
+    (blur)="blur()"
+  />
+</div>
+@if (errorText()) {
+  <p class="phone-error" [id]="inputId() + '-error'" role="status">{{ errorText() }}</p>
+}
