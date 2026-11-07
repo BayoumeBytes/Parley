@@ -47,6 +47,7 @@ beforeEach(async () => {
       color: accountColor(String(id)), phoneNumber: "+12025550123",
     }),
   }));
+  jest.spyOn(MessageModel, "aggregate").mockResolvedValue([]);
   jest.spyOn(SessionModel, "findOne").mockImplementation(async ({ sessionId }) => sessions.get(sessionId) ?? null);
   jest.spyOn(SessionModel, "deleteOne").mockImplementation(async ({ sessionId }) => sessions.delete(sessionId));
   jest.spyOn(MemberShipModel, "findOne").mockImplementation(async (filter) => memberships.find((m) =>
@@ -184,8 +185,9 @@ test("room listings preserve room IDs and expose populated metadata and role", a
     room, roomDetails: { _id: room, name: "Team", type: "group" },
     user: { _id: alice, username: "alice", color: accountColor(alice) }, role: "owner",
     participants: [{ _id: alice, username: "alice", color: accountColor(alice) }, { _id: bob, username: "bob", color: accountColor(bob) }],
+    lastMessage: null, unreadCount: 0,
   }]);
-  expect(query.select).toHaveBeenCalledWith("room user role -_id");
+  expect(query.select).toHaveBeenCalledWith("room user role joinedAt lastReadAt lastReadMessage -_id");
   expect(query.populate).toHaveBeenCalledWith("room", "name type");
   expect(MemberShipModel.find).toHaveBeenLastCalledWith({ room: { $in: [room] } });
 });
@@ -196,6 +198,30 @@ test("group creation rejects empty and whitespace-only names", async () => {
       .send({ type: "group", name, members: [bob] }).expect(400);
   }
   expect(RoomModel.create).not.toHaveBeenCalled();
+});
+
+test("failed room summaries return an error instead of erasing the client's inbox", async () => {
+  MessageModel.aggregate.mockRejectedValue(new Error("Database unavailable"));
+  const response = await request(server).post("/api/conv/getuserrooms")
+    .set("Cookie", "session=alice").send({}).expect(500);
+  expect(response.body).toEqual({ error: "Unable to load conversations" });
+});
+
+test("read updates notify only the reader's connected tabs", async () => {
+  const [a, aTab, b] = await Promise.all([connect(), connect(), connect("bob")]);
+  const id = "000000000000000000000021";
+  jest.spyOn(MessageModel, "findOne").mockReturnValue({
+    lean: async () => ({ _id: id, room, createdAt: new Date() }),
+  });
+  const update = jest.spyOn(MemberShipModel, "updateOne").mockResolvedValue({ modifiedCount: 1 });
+  await request(server).post("/api/msg/markread").set("Cookie", "session=alice")
+    .send({ room, messageId: id }).expect(200);
+  expect(update).toHaveBeenCalled();
+  expect(await a.next("roomRead")).toEqual({ room });
+  expect(await aTab.next("roomRead")).toEqual({ room });
+  await expect(b.next("roomRead", 80)).rejects.toThrow("Timed out");
+  await request(server).post("/api/msg/markread").set("Cookie", "session=eve")
+    .send({ room, messageId: id }).expect(403);
 });
 
 test("membership APIs subscribe added users and evict removed users across tabs", async () => {

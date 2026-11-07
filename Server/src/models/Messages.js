@@ -17,6 +17,7 @@ const MessageSchema = new mongoose.Schema(
 );
 
 MessageSchema.index({ room: 1 });
+MessageSchema.index({ room: 1, createdAt: -1, _id: -1 });
 MessageSchema.index({ sender: 1 });
 
 // type Message = InferSchemaType<typeof MessageSchema>;

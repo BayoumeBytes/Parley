@@ -1,5 +1,16 @@
 import { SendChatMessage, GetRoomMessages } from "../services/MessagesService.js";
 import { requireRoomMember } from "../services/RoomAccessService.js";
+import { MarkRoomRead } from "../services/ReadStateService.js";
+
+export async function MarkRead(req, res) {
+  try {
+    return res.json(await MarkRoomRead(req.body?.room, req.body?.messageId, req.user.id));
+  } catch (error) {
+    return res.status(error.status || 500).json({
+      error: error.status ? error.message : "Unable to save read progress",
+    });
+  }
+}
 
 export async function SendMessage(req, res) {
   const { message, room } = req.body ?? {};

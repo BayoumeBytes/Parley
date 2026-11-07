@@ -79,6 +79,9 @@ export async function GetRooms(req, res) {
   const userId = req.user.id;
   try {
     const result = await GetUserRooms(userId);
+    if (result?.error) {
+      return res.status(500).json({ error: "Unable to load conversations" });
+    }
     if (result == null) {
       return res.status(200).json({ result: "user doenst have rooms" });
     }

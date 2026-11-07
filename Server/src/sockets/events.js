@@ -18,6 +18,10 @@ export function publishMessage(message) {
   io?.to(roomChannel(message.room)).emit("newMessage", message);
 }
 
+export function publishRoomRead(user, room) {
+  io?.to(userChannel(user)).emit("roomRead", { room: String(room) });
+}
+
 export function disconnectSession(sessionId) {
   io?.in(sessionChannel(sessionId)).disconnectSockets(true);
 }

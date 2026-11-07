@@ -1,5 +1,6 @@
 import { RoomModel } from "../models/Room.js";
 import { MemberShipModel } from "../models/MemberShip.js";
+import { GetRoomSummaries } from "./ReadStateService.js";
 import { publicUser } from "./AccountService.js";
 
 /**
@@ -114,7 +115,7 @@ export async function RemoveMembersFromGroup(roomId, members) {
 export async function GetUserRooms(userId) {
   try {
     const membership = await MemberShipModel.find({ user: userId })
-      .select("room user role -_id")
+      .select("room user role joinedAt lastReadAt lastReadMessage -_id")
       .populate("user", "username _id color")
       .populate("room", "name type")
       .lean();
@@ -132,12 +133,19 @@ export async function GetUserRooms(userId) {
       users.push(publicUser(member.user));
       participantsByRoom.set(roomId, users);
     }
-    return membership.filter((entry) => entry.room).map((entry) => ({
+    const rooms = membership.filter((entry) => entry.room).map((entry) => ({
       ...entry,
       user: publicUser(entry.user),
       room: entry.room._id ?? entry.room,
       roomDetails: entry.room._id ? entry.room : undefined,
       participants: participantsByRoom.get(String(entry.room._id ?? entry.room)) ?? [],
+    }));
+    const summaries = await GetRoomSummaries(rooms, userId);
+    return rooms.map((entry) => ({
+      ...entry,
+      lastMessage: null,
+      unreadCount: 0,
+      ...summaries.get(String(entry.room)),
     }));
   } catch (error) {
     return { error: error.message };

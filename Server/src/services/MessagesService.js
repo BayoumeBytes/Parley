@@ -26,7 +26,7 @@ export async function CreateMessage(text, room, sender) {
 
 export async function GetRoomMessages(room) {
   try {
-    const Messages = await MessageModel.find({ room }).sort({ createdAt: -1 });
+    const Messages = await MessageModel.find({ room }).sort({ createdAt: -1, _id: -1 });
     if (!Messages) return { error: "failed to get messages" };
     return Messages;
   } catch (e) {

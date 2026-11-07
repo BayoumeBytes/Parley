@@ -12,6 +12,7 @@ import { logout, login, register, me, addPhone } from "../controllers/AuthContro
 import {
   GetHistoryMessages,
   SendMessage,
+  MarkRead,
 } from "../controllers/MessagesController.js";
 
 export const AuthRouter = Router();
@@ -32,6 +33,7 @@ export const MsgRouter = Router();
 
 MsgRouter.get("/getroomhistory", GetHistoryMessages);
 MsgRouter.post("/sendmsg", SendMessage);
+MsgRouter.post("/markread", MarkRead);
 
 export const router = Router();
 router.use("/auth", AuthRouter);

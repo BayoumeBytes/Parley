@@ -6,6 +6,7 @@ const MemberShipSchema = new mongoose.Schema({
   role: { type: String, enum: ["owner", "admin", "member"], default: "member" },
   joinedAt: { type: Date, default: Date.now },
   lastReadAt: { type: Date, default: Date.now },
+  lastReadMessage: { type: mongoose.Schema.Types.ObjectId, ref: "Message" },
 });
 
 MemberShipSchema.index({ room: 1, user: 1 }, { unique: true });
