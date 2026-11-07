@@ -1,0 +1,123 @@
+.eyebrow {
+  color: var(--secondary);
+  font-size: 12px;
+  font-weight: 500;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font:
+    600 24px 'Manrope',
+    sans-serif;
+}
+.brand-period {
+  margin-left: -12px;
+  color: var(--accent);
+}
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  background: var(--accent);
+  color: var(--on-accent);
+  border-radius: 12px 12px 12px 4px;
+  font:
+    500 32px/1 Georgia,
+    serif;
+  padding-bottom: 8px;
+}
+.primary,
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 44px;
+  border-radius: 8px;
+  padding: 12px 20px;
+  font-weight: 500;
+}
+.primary {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.secondary {
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.secondary:hover:not(:disabled),
+.icon-button:hover:not(:disabled) {
+  background: var(--raised);
+}
+.text-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 4px 0;
+  background: none;
+  color: var(--accent);
+  font-weight: 500;
+}
+.text-button:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 8px;
+  background: transparent;
+  color: var(--secondary);
+  border-radius: 8px;
+}
+.form-error {
+  padding: 12px;
+  background: var(--error-surface);
+  color: var(--error-text);
+  border-radius: 8px;
+  margin-top: 16px;
+}
+.field-help {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--secondary);
+  margin-top: 8px;
+}
+.auth-submit {
+  width: 100%;
+  margin: 24px 0;
+}
+.connection-dot {
+  flex-shrink: 0;
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--pending);
+}
+.connection-dot.online {
+  background: var(--accent);
+}
+.empty-symbol {
+  display: block;
+  font:
+    64px/1 Georgia,
+    serif;
+  color: var(--accent);
+}
+@media (max-width: 700px) {
+  .icon-button {
+    width: 40px;
+    height: 40px;
+  }
+}
